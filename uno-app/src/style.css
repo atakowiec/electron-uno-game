@@ -32,3 +32,8 @@ body {
   height: auto;
   margin-bottom: 20px;
 }
+
+.toast {
+    background-color: #001d31 !important;
+    border-radius: 10px !important;
+}

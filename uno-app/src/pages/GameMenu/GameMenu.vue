@@ -97,13 +97,13 @@ function onModalAction() {
 
 <style scoped>
 .or {
-  margin: 0 0 20px 0;
+  margin: 20px 0 20px 0;
   color: white;
   font-size: 18px;
 }
 
 .error-message {
-  color: #DE4652;
+  opacity: .9;
   font-size: 14px;
   padding-bottom: 10px;
   padding-top: 10px;

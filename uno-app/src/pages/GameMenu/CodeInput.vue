@@ -10,7 +10,7 @@ const inputs = ref<HTMLInputElement[]>([]);
 
 function onPaste(event: ClipboardEvent) {
   const paste = event.clipboardData?.getData('text') || '';
-  if (!/^\d{1,5}$/.test(paste)) return;
+  if (!/^[a-zA-Z0-9]{1,5}$/.test(paste)) return;
   event.preventDefault();
 
   const chars = paste.slice(0, 5).split('');

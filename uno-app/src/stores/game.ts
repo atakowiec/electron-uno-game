@@ -10,8 +10,16 @@ export const useGameStore = defineStore('game', {
     game: null,
   }),
   actions: {
-    setGame(gamePacket: GamePacket) {
+    setGame(gamePacket: GamePacket | null) {
       console.log('Saving game packet:', gamePacket);
+
+      if (!gamePacket) {
+        localStorage.removeItem('game_id');
+        localStorage.removeItem('game_username');
+      } else {
+        localStorage.setItem('game_id', gamePacket.gameId);
+        localStorage.setItem('game_username', gamePacket.player.username);
+      }
 
       this.game = gamePacket;
     },

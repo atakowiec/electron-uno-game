@@ -1,4 +1,12 @@
-import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import {
+  ConnectedSocket,
+  MessageBody,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
 import {
   ClientToServerEvents,
   ClientToServerEventTypes,
@@ -16,12 +24,22 @@ import * as console from 'node:console';
     origin: ['http://localhost:5173'],
   },
 })
-export class GameGateway {
+export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
   constructor(private readonly gameService: GameService) {
     // empty
+  }
+
+  handleConnection(socket: ClientSocket) {
+    console.log('Client connected:', socket.id);
+  }
+
+  handleDisconnect(socket: ClientSocket) {
+    console.log('Client disconnected:', socket.id);
+
+    this.gameService.handleDisconnect(socket);
   }
 
   @SubscribeMessage<ClientToServerEventTypes>('checkGameId')
@@ -39,8 +57,8 @@ export class GameGateway {
   @SubscribeMessage<ClientToServerEventTypes>('joinGame')
   handleJoinGame(
     @ConnectedSocket() socket: ClientSocket,
-    @MessageBody('1') gameId: string,
     @MessageBody('0') username: string,
+    @MessageBody('1') gameId: string,
   ) {
     console.log('Joining game with ID:', gameId, 'and username:', username);
     socket.data.username = username;

@@ -51,6 +51,7 @@ h1 {
   gap: 10px;
   margin-top: 20px;
   align-items: flex-start;
+  margin-bottom: 20px;
 }
 
 .game-code {

@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import ColoredBorder, { ButtonType } from './ColoredBorder.vue';
 
+export type ButtonSize = 'small' | 'medium' | 'large';
+
 defineOptions({ inheritAttrs: false });
 defineProps<{
   type: ButtonType
   buttonStyle?: string
+  size?: ButtonSize
 }>();
 
 </script>
@@ -12,7 +15,7 @@ defineProps<{
 <template>
   <ColoredBorder :type="type" :style="$attrs.style || ''">
     <button
-      :class="`button ${type === 'disabled' ? ' disabled' : ''}`"
+      :class="`button ${type === 'disabled' ? ' disabled' : ''} ${size || 'large'}`"
       :style="buttonStyle ?? ''"
       v-bind="{...$attrs, style: ''}">
       <slot></slot>
@@ -24,8 +27,6 @@ defineProps<{
 <style scoped>
 .button {
   border: none;
-  padding: 10px 35px;
-  font-size: 1rem;
   border-radius: 10px;
   background-color: #0D5A94;
   color: white;
@@ -33,6 +34,15 @@ defineProps<{
   cursor: pointer;
   transition: background-color 0.3s ease, opacity 0.3s ease;
   z-index: 5;
+
+  &.large {
+    padding: 10px 35px;
+    font-size: 1rem;
+  }
+
+  &.small {
+    padding: 5px 11px;
+  }
 
   &.disabled {
     cursor: default;

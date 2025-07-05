@@ -1,8 +1,10 @@
 import { GamePacket, PartialGamePacket } from './game';
+import { Notification } from './notifications';
 
 export interface ServerToClientEvents {
-  setGame: (gamePacket: GamePacket) => void;
+  setGame: (gamePacket: GamePacket | null) => void;
   updateGame: (gamePacket: PartialGamePacket) => void;
+  notification: (notification: Notification) => void;
 }
 
 export interface ClientToServerEvents {

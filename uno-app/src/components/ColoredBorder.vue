@@ -49,7 +49,7 @@ const selectedColors = computed(() => colors[props.type] || colors['secondary'])
   display: inline-block;
   overflow: hidden;
   padding: 3px;
-  margin: 2px 2px 22px 2px;
+  margin: 2px 2px 2px 2px;
   transition: padding 0.2s, margin 0.2s;
   --border-radius: 13px;
   --color: #ffffff20;
@@ -57,7 +57,7 @@ const selectedColors = computed(() => colors[props.type] || colors['secondary'])
 
 .border-container:hover {
   padding: 5px;
-  margin: 0 0 20px 0;
+  margin: 0;
   --border-radius: 15px;
 }
 
