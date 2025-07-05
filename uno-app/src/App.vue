@@ -1,14 +1,26 @@
-<template>
-  <GameMenu v-if="layoutStore.state === 'menu'" />
-  <GameLobby v-if="layoutStore.state === 'lobby'" />
-  <Game v-if="layoutStore.state === 'game'" />
-</template>
-
 <script setup lang="ts">
-import { useLayoutStore } from './stores/layout.js';
 import GameMenu from './pages/GameMenu/GameMenu.vue';
 import GameLobby from './pages/GameLobby/GameLobby.vue';
-import Game from './pages/Game/Game.vue';
+import { useSocketStore } from './stores/socket.ts';
+import { toRef, watch } from 'vue';
+import { useGameStore } from './stores/game.ts';
 
-const layoutStore = useLayoutStore();
+const socketStore = useSocketStore();
+const gameStore = useGameStore();
+
+watch(toRef(socketStore, 'socket'), (socket) => {
+  if (!socket) return;
+
+  socket.on('setGame', gameStore.setGame);
+  socket.on('updateGame', gameStore.updateGame);
+});
+
+socketStore.connect();
+
 </script>
+
+<template>
+  <GameMenu v-if="!gameStore.game?.gameId" />
+  <GameLobby v-if="!!gameStore.game?.gameId" />
+  <!--  <Game v-if="layoutStore.state === 'game'" />-->
+</template>

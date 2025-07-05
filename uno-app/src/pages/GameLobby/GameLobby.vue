@@ -1,15 +1,15 @@
 <script setup lang="ts">
 
-import Button from '../../components/Button.vue';
+import AppButton from '../../components/AppButton.vue';
 import PlayerListEntry from './PlayerListEntry.vue';
-import { reactive } from 'vue';
+import { useGameStore } from '../../stores/game.ts';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
-const players = reactive([
-  { id: 1, name: 'Player 1', owner: true },
-  { id: 2, name: 'Player 2' },
-  { id: 3, name: 'Player 3' },
-  { id: 4, name: 'Player 4' },
-]);
+const gameStore = useGameStore();
+
+if (!gameStore.game) {
+  throw new Error('Game store is not initialized');
+}
 </script>
 
 <template>
@@ -18,14 +18,17 @@ const players = reactive([
     <div class="page-box">
       <h1>Game Lobby</h1>
       <div class="game-code">
-        #a5v3a
+        #{{ gameStore.game?.gameId }}
       </div>
       <ul class="player-list">
-        <PlayerListEntry v-for="(player, i) in players" :key="player.id" :player="player" :index="i" />
+        <PlayerListEntry v-for="(player, i) in gameStore.game?.players" :key="player.username" :player="player" :index="i" />
       </ul>
       <div class="buttons">
-        <Button type="colored">Start Game</Button>
-        <Button type="secondary">Leave Lobby</Button>
+        <AppButton type="colored">Start Game</AppButton>
+        <AppButton type="secondary">Leave Lobby</AppButton>
+        <AppButton type="secondary" button-style="padding: 10px 15px;">
+          <FontAwesomeIcon icon="gear" />
+        </AppButton>
       </div>
     </div>
   </div>
@@ -45,8 +48,15 @@ h1 {
 .buttons {
   display: flex;
   justify-content: center;
-  gap: 20px;
+  gap: 10px;
   margin-top: 20px;
   align-items: flex-start;
+}
+
+.game-code {
+  font-size: 1.2rem;
+  margin-top: -5px;
+  opacity: .7;
+  letter-spacing: 1px;
 }
 </style>

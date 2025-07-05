@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { PlayerPacket } from '@shared/game';
 
-defineProps(["player", "index"])
+defineProps<{
+  player: PlayerPacket;
+  index: number;
+}>()
 </script>
 
 <template>
   <li>
     <div class="number">
-      {{ index+1 }}.
+      {{ index + 1 }}.
     </div>
     <div class="name">
-      {{ player.name}}
+      {{ player.username}}
     </div>
     <div class="right">
       <div class="crown-icon" v-if="player.owner">

@@ -1,14 +1,20 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 
-const props = defineProps({
-  type: {
-    type: String,
-    default: 'secondary'
-  }
-});
+export type ButtonType = 'colored' | 'secondary' | 'disabled';
+
+const props = defineProps<{
+  type: ButtonType;
+}>();
 
 const colors: Record<string, Record<string, string>> = {
   "secondary": {
+    tl: '#ffffff20',
+    tr: '#ffffff20',
+    bl: '#ffffff20',
+    br: '#ffffff20'
+  },
+  "disabled": {
     tl: '#ffffff20',
     tr: '#ffffff20',
     bl: '#ffffff20',
@@ -22,7 +28,7 @@ const colors: Record<string, Record<string, string>> = {
   },
 }
 
-const selectedColors = colors[props.type] || colors['secondary'];
+const selectedColors = computed(() => colors[props.type] || colors['secondary']);
 </script>
 
 <template>
@@ -46,6 +52,7 @@ const selectedColors = colors[props.type] || colors['secondary'];
   margin: 2px 2px 22px 2px;
   transition: padding 0.2s, margin 0.2s;
   --border-radius: 13px;
+  --color: #ffffff20;
 }
 
 .border-container:hover {
