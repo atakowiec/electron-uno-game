@@ -27,7 +27,7 @@ export default class GamePlayer {
   }
 
   sendNotification(type: NotificationType, message: string): void {
-    this.socket.emit('notification', {
+    this.socket.volatile.emit('notification', {
       type,
       message,
     });

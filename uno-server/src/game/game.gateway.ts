@@ -64,4 +64,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     socket.data.username = username;
     this.gameService.joinGame(socket, gameId);
   }
+
+  @SubscribeMessage<ClientToServerEventTypes>('leaveGame')
+  handleLeaveGame(@ConnectedSocket() socket: ClientSocket) {
+    console.log('Leaving game for socket:', socket.id);
+    this.gameService.leaveGame(socket);
+  }
+
+  @SubscribeMessage<ClientToServerEventTypes>('kickPlayer')
+  handleKickPlayer(@ConnectedSocket() socket: ClientSocket, @MessageBody() username: string) {
+    this.gameService.kickPlayer(socket, username);
+  }
 }

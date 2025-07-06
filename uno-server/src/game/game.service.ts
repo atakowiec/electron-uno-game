@@ -62,4 +62,33 @@ export class GameService {
     delete this.games[gameId];
     console.log(`Game with ID ${gameId} has been removed.`);
   }
+
+  leaveGame(socket: ClientSocket) {
+    const game = this.getGameBySocket(socket);
+    if (game) {
+      game.leave(socket);
+    }
+
+    socket.emit('setGame', null);
+  }
+
+  kickPlayer(socket: ClientSocket, username: string) {
+    const game = this.getGameBySocket(socket);
+    if (!game) {
+      console.warn(`No game found for socket ${socket.id}`);
+      return;
+    }
+
+    if (!game.hasPlayer(username)) {
+      console.warn(`Player ${username} not found in game ${game.id}`);
+      return;
+    }
+
+    if (game.owner.username !== socket.data.username) {
+      console.warn(`Player ${socket.data.username} is not the owner of game ${game.id}`);
+      return;
+    }
+
+    game.kickPlayer(username);
+  }
 }

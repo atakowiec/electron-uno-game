@@ -3,13 +3,21 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { PlayerPacket } from '@shared/game';
 import { useGameStore } from '../../stores/game.ts';
 import AppButton from '../../components/AppButton.vue';
+import { useSocketStore } from '../../stores/socket.ts';
 
-defineProps<{
+const props = defineProps<{
   player: PlayerPacket;
   index: number;
 }>();
 
 const gameStore = useGameStore();
+const socketStore = useSocketStore();
+
+function kickPlayer() {
+  if (!gameStore.game) return;
+
+  socketStore.emit('kickPlayer', props.player.username);
+}
 </script>
 
 <template>
@@ -28,7 +36,7 @@ const gameStore = useGameStore();
         <font-awesome-icon icon="crown" />
       </div>
       <div class="crown-icon" v-if="!player.owner && gameStore.game?.player.owner">
-        <AppButton type="secondary" size="small">
+        <AppButton type="secondary" size="small" @click="kickPlayer">
           <font-awesome-icon icon="remove" />
         </AppButton>
       </div>

@@ -3,6 +3,7 @@ import GamePlayer from './game-player';
 import { GamePacket } from '@shared/game';
 import { GameService } from '../game.service';
 import { pickFields } from '../../app.util';
+import { NotificationType } from '@shared/notifications';
 
 export class Game {
   public owner: GamePlayer;
@@ -35,6 +36,12 @@ export class Game {
       const packet = this.getPacket(player);
       const updatePacket = pickFields(packet, updateFields);
       player.socket.emit('updateGame', updatePacket);
+    });
+  }
+
+  public broadcastNotification(type: NotificationType, message: string): void {
+    this.players.forEach((player) => {
+      player.sendNotification(type, message);
     });
   }
 
@@ -149,14 +156,60 @@ export class Game {
       return;
     } else if (player.owner) {
       // If the owner is removed, transfer ownership to the next player
-      const newOwner = this.players[0];
-      newOwner.owner = true;
-      this.owner = newOwner;
-      console.log(`Player ${newOwner.username} is now the owner of game ${this.id}`);
+      this.findNewOwner();
     }
 
     this.broadcastUpdate(['player', 'players']);
 
     console.log(`Player ${player.username} has been removed from game ${this.id}`);
+  }
+
+  private findNewOwner() {
+    if (this.players.length === 0) {
+      console.warn(`No players left in game ${this.id} to transfer ownership.`);
+      return;
+    }
+
+    const newOwner = this.players[0];
+    newOwner.owner = true;
+    this.owner = newOwner;
+
+    console.log(`Player ${newOwner.username} is now the owner of game ${this.id}`);
+  }
+
+  leave(socket: ClientSocket) {
+    const player = this.getPlayerBySocket(socket);
+    if (!player) return;
+
+    this.forceRemovePlayer(player);
+    this.broadcastNotification('info', `${player.username} has left the game.`);
+
+    if (player.owner) {
+      this.findNewOwner();
+      this.broadcastNotification('info', `${this.owner.username} has taken ownership of the game.`);
+    }
+
+    this.broadcastUpdate(['players']);
+  }
+
+  kickPlayer(username: string) {
+    const player = this.getPlayerByUsername(username);
+    if (!player) {
+      console.warn(`Player ${username} not found in game ${this.id}`);
+      return;
+    }
+
+    if (player.owner) {
+      console.warn(`Cannot kick owner ${this.owner.username} from game ${this.id}`);
+      return;
+    }
+
+    console.log(`Kicking player ${player.username} from game ${this.id}`);
+    this.forceRemovePlayer(player);
+    this.broadcastNotification('warning', `${player.username} has been kicked from the game.`);
+    player.sendNotification('warning', 'You have been kicked from the game.');
+    player.socket.volatile.emit('setGame', null);
+
+    this.broadcastUpdate(['players']);
   }
 }

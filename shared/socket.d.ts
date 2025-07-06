@@ -11,6 +11,8 @@ export interface ClientToServerEvents {
   createGame: (username: string) => void;
   checkGameId: (gameId: string, cb: (exist: bool) => void) => void;
   joinGame: (gameId: string, username: string) => void;
+  leaveGame: () => void;
+  kickPlayer: (username: string) => void;
 }
 
 export type ClientToServerEventTypes = keyof ClientToServerEvents;

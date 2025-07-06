@@ -4,11 +4,17 @@ import AppButton from '../../components/AppButton.vue';
 import PlayerListEntry from './PlayerListEntry.vue';
 import { useGameStore } from '../../stores/game.ts';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { useSocketStore } from '../../stores/socket.ts';
 
 const gameStore = useGameStore();
+const socketStore = useSocketStore();
 
 if (!gameStore.game) {
   throw new Error('Game store is not initialized');
+}
+
+function leaveGameClick() {
+  socketStore.emit('leaveGame');
 }
 </script>
 
@@ -21,12 +27,17 @@ if (!gameStore.game) {
         #{{ gameStore.game?.gameId }}
       </div>
       <ul class="player-list">
-        <PlayerListEntry v-for="(player, i) in gameStore.game?.players" :key="player.username" :player="player" :index="i" />
+        <PlayerListEntry v-for="(player, i) in gameStore.game?.players"
+                         :key="player.username"
+                         :player="player"
+                         :index="i" />
       </ul>
       <div class="buttons">
         <AppButton type="colored">Start Game</AppButton>
-        <AppButton type="secondary">Leave Lobby</AppButton>
-        <AppButton type="secondary" button-style="padding: 10px 15px;">
+        <AppButton type="secondary" @click="leaveGameClick">
+          Leave Lobby
+        </AppButton>
+        <AppButton type="secondary" button-style="padding: 10px 15px;" v-if="gameStore.isOwner">
           <FontAwesomeIcon icon="gear" />
         </AppButton>
       </div>

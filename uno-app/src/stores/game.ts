@@ -11,8 +11,6 @@ export const useGameStore = defineStore('game', {
   }),
   actions: {
     setGame(gamePacket: GamePacket | null) {
-      console.log('Saving game packet:', gamePacket);
-
       if (!gamePacket) {
         localStorage.removeItem('game_id');
         localStorage.removeItem('game_username');
@@ -33,5 +31,7 @@ export const useGameStore = defineStore('game', {
       this.game = { ...this.game, ...gamePacket };
     },
   },
-  getters: {},
+  getters: {
+    isOwner: (state) => !!state.game?.player?.owner
+  },
 });
