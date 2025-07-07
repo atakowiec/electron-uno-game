@@ -91,4 +91,19 @@ export class GameService {
 
     game.kickPlayer(username);
   }
+
+  public startGame(socket: ClientSocket) {
+    const game = this.getGameBySocket(socket);
+    if (!game) {
+      console.warn(`No game found for socket ${socket.id}`);
+      return;
+    }
+
+    if (!game.owner || game.owner.username !== socket.data.username) {
+      console.warn(`Player ${socket.data.username} is not the owner of game ${game.id}`);
+      return;
+    }
+
+    game.start();
+  }
 }

@@ -13,6 +13,7 @@ export interface ClientToServerEvents {
   joinGame: (gameId: string, username: string) => void;
   leaveGame: () => void;
   kickPlayer: (username: string) => void;
+  startGame: () => void;
 }
 
 export type ClientToServerEventTypes = keyof ClientToServerEvents;

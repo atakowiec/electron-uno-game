@@ -1,9 +1,11 @@
 import { ClientSocket } from '../../app';
-import { PlayerPacket } from '@shared/game';
+import { Card, PlayerPacket } from '@shared/game';
 import { NotificationType } from '@shared/notifications';
+import { blindCards } from '../../app.util';
 
 export default class GamePlayer {
   public removeTimeout: NodeJS.Timeout | null = null;
+  public hand: Card[] = [];
 
   constructor(
     public socket: ClientSocket,
@@ -27,7 +29,7 @@ export default class GamePlayer {
   }
 
   sendNotification(type: NotificationType, message: string): void {
-    this.socket.volatile.emit('notification', {
+    this.socket.emit('notification', {
       type,
       message,
     });
@@ -38,5 +40,9 @@ export default class GamePlayer {
       clearTimeout(this.removeTimeout);
       this.removeTimeout = null;
     }
+  }
+
+  getHand(ownCards: boolean = false): Card[] {
+    return ownCards ? this.hand : blindCards(this.hand);
   }
 }

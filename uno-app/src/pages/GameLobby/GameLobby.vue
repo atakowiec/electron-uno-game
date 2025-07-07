@@ -5,9 +5,14 @@ import PlayerListEntry from './PlayerListEntry.vue';
 import { useGameStore } from '../../stores/game.ts';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { useSocketStore } from '../../stores/socket.ts';
+import { ref } from 'vue';
+import ConfirmationModal from '../../components/ConfirmationModal.vue';
+import { toast } from 'vue3-toastify';
 
 const gameStore = useGameStore();
 const socketStore = useSocketStore();
+
+const leaveShown = ref(false);
 
 if (!gameStore.game) {
   throw new Error('Game store is not initialized');
@@ -15,6 +20,19 @@ if (!gameStore.game) {
 
 function leaveGameClick() {
   socketStore.emit('leaveGame');
+}
+
+function startGame() {
+  if (!gameStore.isOwner) {
+    return;
+  }
+
+  if (gameStore.game?.players.some(p => !p.connected)) {
+    toast.error('All players must be connected to start the game.');
+    return;
+  }
+
+  socketStore.emit('startGame');
 }
 </script>
 
@@ -33,8 +51,12 @@ function leaveGameClick() {
                          :index="i" />
       </ul>
       <div class="buttons">
-        <AppButton type="colored">Start Game</AppButton>
-        <AppButton type="secondary" @click="leaveGameClick">
+        <AppButton type="colored"
+                   v-if="gameStore.isOwner"
+                   @click="startGame">
+          Start Game
+        </AppButton>
+        <AppButton type="secondary" @click="leaveShown = true">
           Leave Lobby
         </AppButton>
         <AppButton type="secondary" button-style="padding: 10px 15px;" v-if="gameStore.isOwner">
@@ -43,6 +65,16 @@ function leaveGameClick() {
       </div>
     </div>
   </div>
+  <ConfirmationModal title="Confirmation"
+                     v-model:shown="leaveShown"
+                     :on-confirm="leaveGameClick">
+    <p>
+      Are you sure you want to leave the lobby?
+    </p>
+    <p v-if="gameStore.isOwner">
+      The ownership will be given to the next player.
+    </p>
+  </ConfirmationModal>
 </template>
 
 <style scoped>

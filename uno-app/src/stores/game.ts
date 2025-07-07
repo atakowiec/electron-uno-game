@@ -11,6 +11,8 @@ export const useGameStore = defineStore('game', {
   }),
   actions: {
     setGame(gamePacket: GamePacket | null) {
+      console.log({ gamePacket });
+
       if (!gamePacket) {
         localStorage.removeItem('game_id');
         localStorage.removeItem('game_username');
@@ -22,6 +24,7 @@ export const useGameStore = defineStore('game', {
       this.game = gamePacket;
     },
     updateGame(gamePacket: PartialGamePacket) {
+      console.log({ update: gamePacket });
       if (!this.game) {
         console.warn('No game to update');
         return;
@@ -32,6 +35,6 @@ export const useGameStore = defineStore('game', {
     },
   },
   getters: {
-    isOwner: (state) => !!state.game?.player?.owner
+    isOwner: (state) => !!state.game?.player?.owner,
   },
 });

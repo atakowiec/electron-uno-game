@@ -1,13 +1,18 @@
 import { ClientSocket } from '../../app';
 import GamePlayer from './game-player';
-import { GamePacket } from '@shared/game';
+import { Card, GamePacket, GameStatus, PlayerHand } from '@shared/game';
 import { GameService } from '../game.service';
-import { pickFields } from '../../app.util';
+import { blindCards, pickFields, shuffle } from '../../app.util';
 import { NotificationType } from '@shared/notifications';
+import { cardsData } from './cards-data';
 
 export class Game {
   public owner: GamePlayer;
   public players: GamePlayer[];
+  public status: GameStatus = 'waiting';
+
+  public deck: Card[] = [];
+  public stack: Card[] = [];
 
   constructor(
     public gameService: GameService,
@@ -18,6 +23,15 @@ export class Game {
     this.players = [this.owner];
 
     this.sendGamePacket(owner);
+
+    this.deck = shuffle(
+      Object.keys(cardsData).map(
+        (card_id, i): Card => ({
+          id: i,
+          card_id: card_id,
+        }),
+      ),
+    );
   }
 
   public sendGamePacket(socket: ClientSocket): void {
@@ -106,8 +120,34 @@ export class Game {
       gameId: this.id,
       player: forPlayer.getPacket(),
       players: this.players.map((player) => player.getPacket()),
-      status: 'waiting',
+      status: this.status,
+      stack: this.stack,
+      deck: blindCards(this.deck),
+      playerHand: forPlayer.getHand(true),
+      otherHands: this.getOpponentsHands(forPlayer),
     };
+  }
+
+  /**
+   * Returns the hands of all opponents, with cards blinded. In order based on the player's position.
+   * @param forPlayer The player for whom the opponents' hands are being requested.
+   * @private
+   */
+  private getOpponentsHands(forPlayer: GamePlayer): PlayerHand[] {
+    let index = this.players.indexOf(forPlayer);
+    index = (index + 1) % this.players.length; // Start from the next player
+
+    const opponentsHands: PlayerHand[] = [];
+    for (let i = 0; i < this.players.length - 1; i++) {
+      const opponent = this.players[index];
+      opponentsHands.push({
+        username: opponent.username,
+        cards: blindCards(opponent.getHand()),
+      });
+      index = (index + 1) % this.players.length; // Move to the next player
+    }
+
+    return opponentsHands;
   }
 
   hasPlayer(username?: string) {
@@ -133,7 +173,7 @@ export class Game {
 
     player.removeTimeout = setTimeout(() => {
       this.forceRemovePlayer(player);
-    }, 130000); // 30-second timeout
+    }, 30_000); // 30-second timeout
 
     this.broadcastUpdate(['players']);
   }
@@ -211,5 +251,35 @@ export class Game {
     player.socket.volatile.emit('setGame', null);
 
     this.broadcastUpdate(['players']);
+  }
+
+  public start() {
+    if (this.players.length < 2) {
+      console.warn(`Cannot start game ${this.id} with less than 2 players.`);
+      this.owner.sendNotification('error', 'Cannot start the game with less than 2 players.');
+      return;
+    }
+
+    this.broadcastNotification('info', 'The game is starting!');
+    this.status = 'playing';
+
+    this.giveCardsToPlayers();
+    this.broadcastUpdate(['status', 'deck', 'stack', 'playerHand', 'otherHands']);
+
+    // Additional logic for starting the game can be added here
+    console.log(`Game ${this.id} has started with players: ${this.players.map((p) => p.username).join(', ')}`);
+  }
+
+  private giveCardsToPlayers() {
+    const cardsPerPlayer = 7;
+    for (const player of this.players) {
+      player.hand = this.deck.splice(0, cardsPerPlayer);
+      player.clearRemoveTimeout();
+    }
+
+    // for test purposes, we can give the first 7 cards to the stack - to test displaying cards
+    if (this.deck.length > 0) {
+      this.stack.push(...this.deck.splice(0, 7));
+    }
   }
 }

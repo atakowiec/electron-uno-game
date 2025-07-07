@@ -4,6 +4,8 @@ import { PlayerPacket } from '@shared/game';
 import { useGameStore } from '../../stores/game.ts';
 import AppButton from '../../components/AppButton.vue';
 import { useSocketStore } from '../../stores/socket.ts';
+import ConfirmationModal from '../../components/ConfirmationModal.vue';
+import { ref } from 'vue';
 
 const props = defineProps<{
   player: PlayerPacket;
@@ -13,6 +15,8 @@ const props = defineProps<{
 const gameStore = useGameStore();
 const socketStore = useSocketStore();
 
+const kickShown = ref(false);
+
 function kickPlayer() {
   if (!gameStore.game) return;
 
@@ -21,6 +25,14 @@ function kickPlayer() {
 </script>
 
 <template>
+  <ConfirmationModal title="Confirmation"
+                     v-if="!player.owner && gameStore.game?.player.owner"
+                     v-model:shown="kickShown"
+                     :on-confirm="kickPlayer">
+    <p>
+      Are you sure you want to kick {{ player.username }}?
+    </p>
+  </ConfirmationModal>
   <li>
     <div class="number">
       {{ index + 1 }}.
@@ -36,7 +48,7 @@ function kickPlayer() {
         <font-awesome-icon icon="crown" />
       </div>
       <div class="crown-icon" v-if="!player.owner && gameStore.game?.player.owner">
-        <AppButton type="secondary" size="small" @click="kickPlayer">
+        <AppButton type="secondary" size="small" @click="kickShown = true">
           <font-awesome-icon icon="remove" />
         </AppButton>
       </div>
@@ -61,6 +73,7 @@ li {
 
 .name {
   flex: 1;
+  min-width: 250px;
 }
 
 .right {

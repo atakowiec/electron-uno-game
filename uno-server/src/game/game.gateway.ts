@@ -75,4 +75,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleKickPlayer(@ConnectedSocket() socket: ClientSocket, @MessageBody() username: string) {
     this.gameService.kickPlayer(socket, username);
   }
+
+  @SubscribeMessage<ClientToServerEventTypes>('startGame')
+  handleStartGame(@ConnectedSocket() socket: ClientSocket) {
+    this.gameService.startGame(socket);
+  }
 }
