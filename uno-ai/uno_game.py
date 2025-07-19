@@ -1,6 +1,9 @@
 from typing import List
+
+from ai_player import AiPlayer
 from card import Card
 from cards_data import cards_data
+from possible_actions import possible_actions
 from uno_player import UnoPlayer
 
 
@@ -12,14 +15,21 @@ class UnoGame:
         self.direction: int = 1
         self.current_value: int = 0
 
-        for i in range(4):
-            self.players.append(UnoPlayer(self, i))
+        self.current_player_index: int = 0
+        self.winners: List[UnoPlayer] = []
+        self.prepare_game()
 
-    def start(self):
+    def prepare_game(self):
+        self.players.append(AiPlayer(self, 0))
+        self.players.append(AiPlayer(self, 1))
+        self.players.append(AiPlayer(self, 2))
+        self.players.append(AiPlayer(self, 3))
+
         self.generate_deck()
         self.shuffle_deck()
         self.deal_cards()
 
+    def start(self):
         self.play()
 
         self.end_game()
@@ -77,11 +87,21 @@ class UnoGame:
 
         player.selected_cards.clear()
 
+        if not player.hand:
+            print(f"Player {player.name} has won the game! after {player.current_turn} turns")
+            self.winners.append(player)
+            self.players.remove(player)
+            return
+
     def draw_card(self, player: UnoPlayer):
         if not self.deck:
             self.deck = self.stack[:-1]
             self.stack = [self.stack[-1]]
             self.shuffle_deck()
+
+        if not self.deck:
+            print("no cards left")
+            return None
 
         card = self.deck.pop(0)
         player.hand.append(card)
@@ -89,7 +109,6 @@ class UnoGame:
 
     def end_game(self):
         print("Game Over!")
-        # todo give penelties
 
     def get_top_card(self):
         if self.stack:
@@ -97,6 +116,29 @@ class UnoGame:
         return None
 
     def check_game_end(self):
-        players_with_cards = [player for player in self.players if player.hand]
+        if len(self.players) < 2:
+            print("Not enough players to continue the game.")
+        return len(self.players) < 2
 
-        return len(players_with_cards) < 2
+    def get_encoded_state(self):
+        return self.players[self.current_player_index].get_encoded_state()
+
+    def play_action(self, action_idx: int):
+        player = self.players[self.current_player_index]
+        actions = player.get_actions()
+
+        if action_idx < 0 or action_idx >= len(possible_actions):
+            print(f"Invalid action index: {action_idx}")
+            return -10, self.check_game_end()
+
+        action = possible_actions[action_idx]
+
+        if action not in actions:
+            return -10, self.check_game_end()
+
+        reward = player.perform_action(action)
+
+        if player.turn_completed:
+            self.current_player_index = (self.current_player_index + self.direction) % len(self.players)
+
+        return reward, self.check_game_end()

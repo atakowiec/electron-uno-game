@@ -1,9 +1,9 @@
+from abc import abstractmethod, ABC
 from typing import List
-
 from card import Card
 
 
-class UnoPlayer:
+class UnoPlayer(ABC):
 
     def __init__(self, game, index: int):
         from uno_game import UnoGame
@@ -13,40 +13,32 @@ class UnoPlayer:
         self.selected_cards: List[Card] = []
         self.blocked_rounds: int = 0
         self.combo_direction: int = 0  # 1 for up, -1 for down, 0 for no combo
-        self.name = f"player-{index}"
         self.turn_completed = False
         self.resets = 0
+        self.name = f"player-{index}"
+        self.current_turn = 1
+
+        self.actions = []
 
     def turn(self):
         self.turn_completed = False
-        actions = self.get_actions()
-
-        print("--------------------------------------")
-        print(f"player: {self.name}")
-        print(f"top: {self.game.get_top_card()}")
-        print(f"hand: {self.get_cards(None, None)}")
-        print(f"selected_cards: {self.selected_cards}")
-        print(f"other_hands: {self.get_other_hands()}")
-        print(f"actions: {actions}")
-        print("")
-        print(f"choose action [0-{len(actions) - 1}]: ", end="")
-        action = self.read_action(actions)
-        print(f"selected: {action}")
-        print("")
-        self.perform_action(action)
-        print("--------------------------------------")
+        print(f"Player {self.name}")
+        self.make_move()
 
         if not self.turn_completed:
             self.turn()
 
-    @staticmethod
-    def read_action(actions: List[str]) -> str:
+    @abstractmethod
+    def make_move(self):
+        pass
+
+    def read_action(self, actions: List[str]) -> str:
         action = -1
         while True:
             val = input()
 
             if not val.isnumeric():
-                print("Podaj liczbę!")
+                self.print("Podaj liczbę!")
                 continue
 
             action = int(val)
@@ -54,7 +46,7 @@ class UnoPlayer:
             if 0 <= action < len(actions):
                 break
 
-            print("Nieprawidłowy zakres!")
+            self.print("Nieprawidłowy zakres!")
 
         return actions[action]
 
@@ -84,6 +76,7 @@ class UnoPlayer:
                 else:
                     actions.append(f"play:{card.id}")
 
+        self.actions = actions  # cache actions for later use in this turn
         return actions
 
     def has_card(self, color: str | None, rank: str | None) -> bool:
@@ -104,46 +97,51 @@ class UnoPlayer:
         player_index = self.game.players.index(self)
 
         res = []
-        for i in range(len(self.game.players) - 1):
-            player_index = (player_index + 1) % len(self.game.players)
+        for _ in range(len(self.game.players) - 1):
+            player_index = (player_index + self.game.direction) % len(self.game.players)
             res.append(len(self.game.players[player_index].hand))
 
         return res
 
     def perform_action(self, action: str):
+        self.turn_completed = False
         [action, card_id, variant] = (action.split(":") + [""] * 3)[:3]
 
         if action == "play":
             self.play_card(card_id, variant)
+            return 0.5 + len(self.selected_cards) * 0.2
 
         if action == "pass":
-            self.action_pass()
+            return self.action_pass()
 
         if action == "draw_card":
-            self.draw_card()
+            return self.draw_card()
 
         if action == "accept":
-            self.accept()
+            return self.accept()
 
         if action == "reset":
             self.reset()
+            return 0.1 - self.resets * 0.05
+
+        return 0
 
     def can_play(self, top_card: Card, card: Card) -> bool:
         # if already is a combo - player can only play cards allowed for combo
         if self.selected_cards:
-            print(f"{card} - combo")
-            return ((self.combo_direction >= 0 and card.id in top_card.combo_up) or
-                    (self.combo_direction <= 0 and card.id in top_card.combo_down) or
-                    (card.id in top_card.combo_both))
+            self.print(f"{card} - combo")
+            return ((self.combo_direction >= 0 and card.type in top_card.combo_up) or
+                    (self.combo_direction <= 0 and card.type in top_card.combo_down) or
+                    (card.type in top_card.combo_both))
 
         # if the last card is active block - player can only play another block
         if self.game.current_value > 0 and top_card.rank == "block":
-            print(f"{card} - block")
+            self.print(f"{card} - block")
             return card.rank == "block"
 
         # with plus same as above
         if self.game.current_value > 0 and top_card.rank == "plus":
-            print(f"{card} - plus")
+            self.print(f"{card} - plus")
             return card.rank == "plus"
 
         # and then handle just playing card
@@ -151,14 +149,14 @@ class UnoPlayer:
 
     def play_card(self, card_id: str, card_variant: str):
         card = next((c for c in self.hand if c.id == card_id), None).get_variant(card_variant)
-        print(f"playing {card}")
+        self.print(f"playing {card}")
 
         # if it's not a first card in the combo, determine the combo direction
         if self.selected_cards:
             last_selected = self.selected_cards[-1]
-            if card.id in last_selected.combo_up:
+            if card.type in last_selected.combo_up:
                 self.combo_direction = 1
-            elif card.id in last_selected.combo_down:
+            elif card.type in last_selected.combo_down:
                 self.combo_direction = -1
 
         self.hand.remove(card.get_base())
@@ -167,37 +165,50 @@ class UnoPlayer:
     def action_pass(self):
         top_card = self.get_top_card()
         if top_card.rank == "block":
-            print(f"block for {self.game.current_value} rounds")
+            self.print(f"block for {self.game.current_value} rounds")
             self.blocked_rounds = self.game.current_value
             self.game.current_value = 0
 
         if top_card.rank == "plus":
-            print(f"drawing {self.game.current_value} cards")
+            self.print(f"drawing {self.game.current_value} cards")
             for i in range(self.game.current_value):
                 self.game.draw_card(self)
 
             self.game.current_value = 0
 
         self.end_turn()
+        return -0.5 if self.actions != ["pass"] else 0.1
 
     def draw_card(self):
         card = self.game.draw_card(self)
-        print(f"drawing {card}")
+        self.print(f"drawing {card}")
         self.end_turn()
 
+        return 0.1 if self.actions == ["draw_card"] else -len(self.actions)
+
     def accept(self):
-        print(f"playing {self.selected_cards}")
+        self.print(f"playing {self.selected_cards}")
+        cards = len(self.selected_cards)
         self.game.play_cards(self)
         self.end_turn()
 
+        reward = 0.5 + cards * 0.2
+
+        if not self.hand:
+            won_players = len([p for p in self.game.players if not p.hand]) - 1
+            reward += 100 - won_players * 20
+
+        return reward
+
     def reset(self):
-        print(f"resetting {self.selected_cards}")
+        self.print(f"resetting {self.selected_cards}")
         self.reset_selected_cards()
         self.resets += 1
 
     def end_turn(self):
         self.turn_completed = True
         self.resets = 0
+        self.current_turn += 1
 
         # append all selected cards to the hand
         self.reset_selected_cards()
@@ -209,3 +220,10 @@ class UnoPlayer:
                 self.hand.append(card.get_base())
 
         self.selected_cards.clear()
+
+    @abstractmethod
+    def print(self, message: str, end="\n"):
+        print(message, end=end)
+
+    def get_encoded_state(self):
+        return []

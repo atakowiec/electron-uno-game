@@ -7,6 +7,7 @@ class Card:
         data = cards_data.get(id)
 
         self.id: str = id
+        self.type: str = data.get('type')
         self.color: str = data.get('color')
         self.rank: str = data.get('rank')
         self.special: bool = data.get('special', False)
@@ -35,3 +36,11 @@ class Card:
         if self.base_card:
             return self.base_card
         return self
+
+    def one_hot_encoded(self) -> List[int]:
+        """One-hot encode the card."""
+        encoding = [0] * len(cards_data)
+        if self.id in cards_data:
+            index = list(cards_data.keys()).index(self.id)
+            encoding[index] = 1
+        return encoding
